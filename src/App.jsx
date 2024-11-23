@@ -5,6 +5,8 @@ const DynamicTable = ({ data }) => {
   const headers = useMemo(() => {
     return Object.keys(data[0] || {});
   }, [data]);
+  console.log(data);
+  
 
   return (
     <table className="table-auto border-collapse border border-gray-300 w-full">
@@ -33,14 +35,18 @@ const DynamicTable = ({ data }) => {
 };
 
 const App = () => {
-  const [data, setData] = useState([]);
+  const [Data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;  // Adjust the number of rows per page as needed
+  const rowsPerPage = 100;  // Adjust the number of rows per page as needed
 
   useEffect(() => {
     fetch('http://localhost:8000/dashboard')
       .then((ret) => ret.json())
       .then((data) => {
+      
+      // Sort the list based on highTime (ascending order)
+        data['data'].sort((a, b) =>  new Date(b['highTime']) - new Date(a['highTime']) );
+        console.log(data['data'])
         setData(data['data']);
       });
   }, []);
@@ -52,7 +58,6 @@ const App = () => {
     // Set up an event listener for messages from the server
     eventSource.onmessage = (event) => {
       let str = event.data.split("data: ")[1]
-      console.log(str);
       let validJsonString = str.replace(/'/g, '"');
 
       // Step 2: Remove the trailing comma (if present)
@@ -61,7 +66,6 @@ const App = () => {
       // Step 3: Parse the string into a JavaScript object
       try {
         const jsonObject = JSON.parse(validJsonString);
-        console.log(jsonObject);
         let list2 = {};  // Make sure list2 is declared outside of the setData callback
 
         // Populate list2 with data
@@ -95,6 +99,14 @@ const App = () => {
           });
 
           // Return the updated list
+          // console.log(mergedListEfficient );
+         
+        
+        // Sort the list based on highTime (ascending order)
+        mergedListEfficient.sort((a, b) =>  new Date(b['highTime']) - new Date(a['highTime']) )
+        console.log(mergedListEfficient);
+        
+          
           return mergedListEfficient;
         });
       } catch (error) {
@@ -124,15 +136,15 @@ const App = () => {
 
   // Memoize current data calculation
   const currentData = useMemo(() => {
-    return data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-  }, [data, currentPage, rowsPerPage]);
+    return Data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  }, [Data, currentPage, rowsPerPage]);
 
   // Memoize page handlers
   const handleNextPage = useCallback(() => {
-    if (currentPage < Math.ceil(data.length / rowsPerPage)) {
+    if (currentPage < Math.ceil(Data.length / rowsPerPage)) {
       setCurrentPage(currentPage + 1);
     }
-  }, [currentPage, data.length, rowsPerPage]);
+  }, [currentPage, Data.length, rowsPerPage]);
 
   const handlePreviousPage = useCallback(() => {
     if (currentPage > 1) {
@@ -151,17 +163,17 @@ const App = () => {
           Previous
         </button>
         <span>
-          Page {currentPage} of {Math.ceil(data.length / rowsPerPage)}
+          Page {currentPage} of {Math.ceil(Data.length / rowsPerPage)}
         </span>
         <button
           onClick={handleNextPage}
           className="px-4 py-2 bg-blue-500 text-white"
-          disabled={currentPage === Math.ceil(data.length / rowsPerPage)}
+          disabled={currentPage === Math.ceil(Data.length / rowsPerPage)}
         >
           Next
         </button>
       </div>
-      {data.length > 0 && <DynamicTable data={currentData} />}
+      {Data.length > 0 ?<DynamicTable data={currentData} /> : <p className="text-center">Loading...</p>}
     </div>
   );
 };
